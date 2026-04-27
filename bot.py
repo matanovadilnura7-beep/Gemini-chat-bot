@@ -6,44 +6,88 @@ import os
 TOKEN = os.environ.get("BOT_TOKEN")
 API_KEY = os.environ.get("GEMINI_API")
 
-if not TOKEN or not API_KEY:
-    raise RuntimeError("BOT_TOKEN yoki GEMINI_API topilmadi (Environment’da qo‘shing)")
+if not TOKEN:
+    raise Exception("BOT_TOKEN topilmadi")
+if not API_KEY:
+    raise Exception("GEMINI_API topilmadi")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
+# Gemini function
 def ask_gemini(text):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
-    data = {"contents": [{"parts": [{"text": text}]}]}
-    r = requests.post(url, json=data, timeout=20)
+
+    data = {
+        "contents": [
+            {"parts": [{"text": text}]}
+        ]
+    }
+
     try:
-        return r.json()["candidates"][0]["content"]["parts"][0]["text"]
-    except:
-        return "❌ Xatolik yuz berdi"
+        r = requests.post(url, json=data, timeout=20)
+        res = r.json()
 
+        print("GEMINI RESPONSE:", res)  # logs uchun
+
+        if "candidates" in res:
+            return res["candidates"][0]["content"]["parts"][0]["text"]
+
+        elif "error" in res:
+            return f"❌ API xato: {res['error']['message']}"
+
+        else:
+            return "❌ Javob kelmadi"
+
+    except Exception as e:
+        return f"❌ Xatolik: {str(e)}"
+
+
+# START
 @bot.message_handler(commands=['start'])
-def start(m):
-    kb = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add("🤖 AI chat", "ℹ️ Help")
-    bot.send_message(m.chat.id, "👋 Salom!", reply_markup=kb)
+def start(message):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add("🤖 AI chat", "ℹ️ Help")
 
+    bot.send_message(
+        message.chat.id,
+        "👋 Salom! Men AI botman.\nSavol yoz 👇",
+        reply_markup=markup
+    )
+
+
+# HELP
+@bot.message_handler(func=lambda m: m.text == "ℹ️ Help")
+def help_msg(message):
+    bot.send_message(message.chat.id, "✍️ Menga savol yoz — AI javob beradi")
+
+
+# CHAT
 @bot.message_handler(func=lambda m: True)
-def chat(m):
-    bot.send_message(m.chat.id, "⏳ Kuting...")
-    bot.send_message(m.chat.id, ask_gemini(m.text))
+def chat(message):
+    bot.send_message(message.chat.id, "⏳ Kuting...")
 
+    javob = ask_gemini(message.text)
+
+    bot.send_message(message.chat.id, javob)
+
+
+# WEBHOOK
 @app.route('/', methods=['POST'])
 def webhook():
     update = telebot.types.Update.de_json(request.get_data().decode('utf-8'))
     bot.process_new_updates([update])
     return 'ok', 200
 
+
 @app.route('/', methods=['GET'])
 def index():
     return "Bot ishlayapti 🚀"
 
+
 if __name__ == "__main__":
     url = os.environ.get("RENDER_EXTERNAL_URL")
+
     if url:
         bot.remove_webhook()
         bot.set_webhook(url=url)
