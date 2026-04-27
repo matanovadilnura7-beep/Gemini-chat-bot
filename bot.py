@@ -4,38 +4,42 @@ import requests
 import os
 
 TOKEN = os.environ.get("BOT_TOKEN")
-API_KEY = os.environ.get("GEMINI_API")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not TOKEN:
     raise Exception("BOT_TOKEN topilmadi")
-if not API_KEY:
-    raise Exception("GEMINI_API topilmadi")
+if not OPENAI_API_KEY:
+    raise Exception("OPENAI_API_KEY topilmadi")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# Gemini function
-def ask_gemini(text):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+# ChatGPT function
+def ask_chatgpt(text):
+    url = "https://api.openai.com/v1/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
     data = {
-        "contents": [
-            {"parts": [{"text": text}]}
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "user", "content": text}
         ]
     }
 
     try:
-        r = requests.post(url, json=data, timeout=20)
+        r = requests.post(url, headers=headers, json=data, timeout=20)
         res = r.json()
 
-        print("GEMINI RESPONSE:", res)
+        print("OPENAI RESPONSE:", res)
 
-        if "candidates" in res:
-            return res["candidates"][0]["content"]["parts"][0]["text"]
-
+        if "choices" in res:
+            return res["choices"][0]["message"]["content"]
         elif "error" in res:
             return f"❌ API xato: {res['error']['message']}"
-
         else:
             return "❌ Javob kelmadi"
 
@@ -51,7 +55,7 @@ def start(message):
 
     bot.send_message(
         message.chat.id,
-        "👋 Salom! Men AI botman.\nSavol yoz 👇",
+        "👋 Salom! Men ChatGPT botman.\nSavol yoz 👇",
         reply_markup=markup
     )
 
@@ -67,7 +71,7 @@ def help_msg(message):
 def chat(message):
     bot.send_message(message.chat.id, "⏳ Kuting...")
 
-    javob = ask_gemini(message.text)
+    javob = ask_chatgpt(message.text)
 
     bot.send_message(message.chat.id, javob)
 
@@ -82,7 +86,7 @@ def webhook():
 
 @app.route('/', methods=['GET'])
 def index():
-    return "Bot ishlayapti 🚀"
+    return "ChatGPT bot ishlayapti 🚀"
 
 
 if __name__ == "__main__":
