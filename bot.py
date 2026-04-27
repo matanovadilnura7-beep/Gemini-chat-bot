@@ -1,8 +1,8 @@
 import telebot
 import requests
 
-TOKEN = "SENING_BOT_TOKEN"
-API_KEY = "SENING_GEMINI_API"
+TOKEN = "8717105037:AAGHh9ucJCqTAAS4uKuzJOFKDzYQ0_UPBbY"
+API_KEY = "AIzaSyBNQ4Ns9Z1ClMvKVVtgvscJbf7NiYXGtn0"
 
 bot = telebot.TeleBot(TOKEN)
 
