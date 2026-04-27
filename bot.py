@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # Gemini function
 def ask_gemini(text):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
     data = {
         "contents": [
@@ -28,7 +28,7 @@ def ask_gemini(text):
         r = requests.post(url, json=data, timeout=20)
         res = r.json()
 
-        print("GEMINI RESPONSE:", res)  # logs uchun
+        print("GEMINI RESPONSE:", res)
 
         if "candidates" in res:
             return res["candidates"][0]["content"]["parts"][0]["text"]
